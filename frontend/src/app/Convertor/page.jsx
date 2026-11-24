@@ -5,72 +5,63 @@ import React, { useState } from "react";
 import Editor from "@monaco-editor/react";
 import * as Babel from "@babel/standalone";
 
-// Base URL of your backend (change it here once, used everywhere below)
+/* ============================================================
+   1. SETTINGS (things you might want to change later)
+   ============================================================ */
+
+// Address of your backend. Change it here once and it updates everywhere.
 const API_URL = "http://localhost:5500";
 
-// Dropdown options: [id Monaco understands, label the user sees]
-const LANGUAGES = [
-  ["javascript", "JavaScript"], ["typescript", "TypeScript"], ["python", "Python"], ["java", "Java"],
-  ["csharp", "C"], ["cpp", "C++"], ["php", "PHP"], ["go", "Go"], ["swift", "Swift"], ["ruby","Ruby"], 
-  ["rust","Rust"], ["kotlin","Kotlin"]
-];
-
-// Monaco uses "csharp" and "cpp", but the backend expects "c#" and "c++".
-// This small map translates between the two. Other languages pass through unchanged.
-const API_NAMES = { csharp: "c#", cpp: "c++", clang: "c" };
-const toApiName = (id) => API_NAMES[id] || id;
-
-// All colors in one place. "ink" = dark side (matches Monaco vs-dark), "paper" = light result side
-const C = {
-  ink: "#1e1e1e", inkRaised: "#252526", inkBorder: "#3c3c3c", inkText: "#d4d4d4", inkTextDim: "#858585",
-  paper: "#f4f0e6", paperTextDim: "#8c8570", teal: "#2f6f5e", error: "#b3462f",
+// ALL the page colors live here. Change a value once and it updates everywhere.
+const THEME = {
+  editor: "my-dark",                    // our custom editor theme (defined below)
+  page: "bg-[#2b2b2f]",                 // main page background
+  result: "bg-[#262629]",               // right panel (slightly darker, so the two sides are easy to tell apart)
+  border: "border-[#45454b]",           // all the thin divider lines
+  label: "text-gray-400",               // small labels: FROM, TO, WRITE, RESULT
+  bar: "bg-[#323237]",                  // the bar behind the buttons
+  dropdown: "bg-[#3a3a40] text-gray-200", // language dropdowns
+  buttonText: "text-gray-200",          // text on the "Save" button
+  dot: "bg-gray-500",                   // status dot when nothing has happened yet
 };
 
-const mono = "'IBM Plex Mono', monospace";
-const sans = "'IBM Plex Sans', sans-serif";
-const flex = { display: "flex", alignItems: "center" };
-const btn = { fontFamily: sans, fontSize: "13px", fontWeight: 600, borderRadius: "6px", padding: "9px 18px" };
-const col = { display: "flex", flexDirection: "column", minWidth: 0 };
+// This creates our own editor theme. It starts from the normal dark theme
+// and only changes the colors we list, so the editor matches the page.
+const defineMyTheme = (monaco) => {
+  monaco.editor.defineTheme("my-dark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": "#2b2b2f",              // same color as THEME.page
+      "editorGutter.background": "#2b2b2f",        // the strip with line numbers
+      "editorLineNumber.foreground": "#7a7a80",    // line numbers
+      "editor.lineHighlightBackground": "#34343a", // highlighted current line
+    },
+  });
+};
 
-// Inline styles (the responsive rules live in the <style> block below)
-const s = {
-  page: { ...col, height: "100dvh", width: "100%", overflow: "hidden", fontFamily: sans, background: C.ink },
-  header: { display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", padding: "14px 24px", borderBottom: `1px solid ${C.inkBorder}`, flexShrink: 0 },
-  brand: { ...flex, gap: "10px" },
-  brandMark: { fontFamily: mono, color: C.teal, fontSize: "16px" },
-  brandName: { color: C.inkText, fontSize: "15px", fontWeight: 600 },
-  status: { ...flex, justifyContent: "flex-end", gap: "8px" },
-  dot: { width: "7px", height: "7px", borderRadius: "50%" },
-  mono12: { fontFamily: mono, fontSize: "12px", color: C.inkTextDim },
-  langBar: { ...flex, justifyContent: "center", flexWrap: "wrap", gap: "14px" },
-  langGroup: { ...flex, gap: "8px" },
-  label: { fontFamily: mono, fontSize: "11px", letterSpacing: "0.12em", color: C.inkTextDim },
-  select: { fontFamily: sans, fontSize: "13px", fontWeight: 500, color: C.inkText, background: C.inkBorder, border: `1px solid ${C.inkBorder}`, borderRadius: "6px", padding: "7px 12px", cursor: "pointer", outline: "none" },
-  swap: { fontFamily: mono, fontSize: "14px", color: C.teal, background: "transparent", border: `1px solid ${C.inkBorder}`, borderRadius: "6px", padding: "6px 10px", cursor: "pointer" },
-  body: { flex: 1, display: "grid", gridTemplateColumns: "1fr 1px 1fr", minHeight: 0 },
-  inkPane: { ...col, background: C.ink },
-  paperPane: { ...col, background: C.paper },
-  spine: { background: `repeating-linear-gradient(to bottom, ${C.inkBorder} 0, ${C.inkBorder} 6px, transparent 6px, transparent 12px)` },
-  editorWrap: { flex: 1, minHeight: 0, borderTop: `1px solid ${C.inkBorder}`, borderBottom: `1px solid ${C.inkBorder}` },
-  toolbar: { display: "flex", flexWrap: "wrap", gap: "10px", padding: "14px 20px", background: C.inkRaised, flexShrink: 0 },
-  run: { ...btn, color: "#eafaf4", background: C.teal, border: "none", cursor: "pointer" },
-  // NEW: style for the Convert button (outlined teal so it differs from "Run JSX")
-  convert: { ...btn, color: C.teal, background: "transparent", border: `1px solid ${C.teal}` },
-  save: { ...btn, color: C.inkText, background: "transparent", border: `1px solid ${C.inkBorder}` },
-  preview: { flex: 1, overflow: "auto", padding: "28px" },
-  empty: { height: "100%", ...flex, justifyContent: "center", textAlign: "center" },
-  emptyText: { color: C.paperTextDim, fontSize: "14px", maxWidth: "280px", lineHeight: 1.6 },
-  errCard: { background: "#fdf1ec", border: `1px solid ${C.error}`, borderRadius: "8px", padding: "16px 18px" },
-  errTitle: { fontFamily: mono, fontSize: "12px", fontWeight: 600, color: C.error, marginBottom: "8px" },
-  errBody: { fontFamily: mono, fontSize: "12.5px", color: "#7a2e1f", whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.6 },
-  // NEW: styles for the converted-code view
-  convHead: { ...flex, justifyContent: "space-between", marginBottom: "10px" },
-  copy: { ...btn, padding: "5px 12px", fontSize: "12px", color: C.teal, background: "transparent", border: `1px solid ${C.teal}`, cursor: "pointer" },
-  convEditor: { height: "calc(100% - 40px)", minHeight: "300px", borderRadius: "8px", overflow: "hidden" },
+// Dropdown options: [id the editor understands, name the user sees]
+const LANGUAGES = [
+  ["javascript", "JavaScript"], ["typescript", "TypeScript"], ["python", "Python"],
+  ["java", "Java"], ["csharp", "C#"], ["cpp", "C++"],
+  ["go", "Go"], ["php", "PHP"], ["ruby", "Ruby"]
+];
+
+// The editor says "csharp" and "cpp", but your backend expects "c#" and "c++".
+const API_NAMES = { csharp: "c#", cpp: "c++" };
+const toApiName = (id) => API_NAMES[id] || id;
+
+// Options shared by both code editors
+const EDITOR_OPTIONS = {
+  minimap: { enabled: false },
+  fontSize: 14,
+  automaticLayout: true,
+  padding: { top: 16 },
 };
 
 // Starter code shown in the editor
-const defaultCode = `
+const DEFAULT_CODE = `
 function CustomComponent() {
   return (
     <div style={{ padding: "30px", borderRadius: "12px", background: "#f5f5f5", textAlign: "center" }}>
@@ -84,111 +75,127 @@ function CustomComponent() {
 render(<CustomComponent />);
 `;
 
-// One reusable dropdown, used for both FROM and TO
-const LangSelect = ({ label, value, onChange }) => (
-  <div style={s.langGroup}>
-    <span style={s.label}>{label}</span>
-    <select value={value} onChange={(e) => onChange(e.target.value)} style={s.select}>
-      {LANGUAGES.map(([id, name]) => (
-        <option key={id} value={id}>{name}</option>
-      ))}
-    </select>
-  </div>
-);
+// Tailwind classes shared by the three buttons (so we don't repeat them)
+const BUTTON = "rounded-md px-4 py-2 text-sm font-semibold transition disabled:opacity-60";
+
+/* ============================================================
+   2. SMALL REUSABLE PIECE: one language dropdown (used for FROM and TO)
+   ============================================================ */
+
+function LanguageSelect({ label, value, onChange }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`text-xs tracking-widest ${THEME.label}`}>{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`cursor-pointer rounded-md border px-3 py-1.5 text-sm outline-none ${THEME.border} ${THEME.dropdown}`}
+      >
+        {LANGUAGES.map(([id, name]) => (
+          <option key={id} value={id}>{name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/* ============================================================
+   3. THE MAIN PAGE
+   ============================================================ */
 
 export default function JSXRenderer() {
-  const [code, setCode] = useState(defaultCode);       // text inside the editor
-  const [Component, setComponent] = useState(null);    // the compiled component
-  const [error, setError] = useState("");              // error message, if any
-  const [errorTitle, setErrorTitle] = useState("Didn't compile"); // NEW: heading of the error card
-  const [saving, setSaving] = useState(false);         // true while saving
+  // ---------- State (the data this page remembers) ----------
+  const [code, setCode] = useState(DEFAULT_CODE);   // text inside the editor
+  const [Component, setComponent] = useState(null); // the component made from your code
+  const [error, setError] = useState(null);         // null, or { title, message }
   const [fromLang, setFromLang] = useState("javascript");
   const [toLang, setToLang] = useState("typescript");
+  const [converted, setConverted] = useState(null); // null, or { code, lang }
+  const [converting, setConverting] = useState(false); // true while waiting for the backend
+  const [saving, setSaving] = useState(false);         // true while saving
 
-  // NEW: state for the conversion feature
-  const [converted, setConverted] = useState("");          // the converted code from the backend
-  const [convertedLang, setConvertedLang] = useState("");  // language the converted code is in
-  const [converting, setConverting] = useState(false);     // true while waiting for the backend
-
-  // Turn the editor text into a real React element and show it
+  // ---------- Action 1: Run the JSX and show it ----------
   const renderCode = () => {
-    try {
-      setError("");
-      setConverted(""); // NEW: hide the converted code so the live preview shows again
-      const js = Babel.transform(code, { presets: ["react"] }).code; // JSX -> plain JavaScript
-      // Run it with a small render() helper that captures the element
-      const run = new Function("React", `let result = null; const render = (el) => { result = el; }; ${js}\nreturn result;`);
-      const element = run(React);
-      if (!element) throw new Error("Your code must call render(<YourComponent />)");
-      setComponent(() => () => element);
-    } catch (err) {
-      setErrorTitle("Didn't compile");
-      setError(err.message);
-      setComponent(null);
-    }
-  };
+  try {
+    setError(null);
+    setConverted(null);
 
-  // NEW: send the code to the backend and get it back in the other language
+    const js = Babel.transform(code, {
+      presets: [["react", { runtime: "classic" }]],
+      plugins: ["transform-modules-commonjs"],
+    }).code;
+
+    const fakeRequire = (name) => {
+      if (name === "react") return React;
+      throw new Error(`Cannot import "${name}". Only "react" is available here.`);
+    };
+
+    const run = new Function(
+      "React",
+      "require",
+      `const exports = {}; let result = null; const render = (el) => { result = el; }; ${js}\nreturn result;`
+    );
+    const element = run(React, fakeRequire);
+
+    if (!element) throw new Error("Your code must call render(<YourComponent />)");
+    setComponent(() => () => element);
+  } catch (err) {
+    setError({ title: "Didn't compile", message: err.message });
+    setComponent(null);
+  }
+};
+
+  // ---------- Action 2: Convert the code to another language ----------
   const convertCode = async () => {
-    // Quick checks before calling the server
     if (!code.trim()) {
-      setErrorTitle("Can't convert");
-      setError("Write some code first.");
-      return;
+      return setError({ title: "Can't convert", message: "Write some code first." });
     }
     if (fromLang === toLang) {
-      setErrorTitle("Can't convert");
-      setError("Pick two different languages.");
-      return;
+      return setError({ title: "Can't convert", message: "Pick two different languages." });
     }
 
     setConverting(true);
-    setError("");
+    setError(null);
+
     try {
       const res = await axios.post(`${API_URL}/gemini/convert`, {
         code,
-        fromLanguage: toApiName(fromLang), // e.g. "csharp" becomes "c#"
+        fromLanguage: toApiName(fromLang),
         toLanguage: toApiName(toLang),
       });
-
-      setConverted(res.data.convertedCode); // backend sends { convertedCode: "..." }
-      setConvertedLang(toLang);             // remember the language for syntax highlighting
+      // The backend replies with { convertedCode: "..." }
+      setConverted({ code: res.data.convertedCode, lang: toLang });
     } catch (err) {
       console.log(err);
-      setErrorTitle("Conversion failed");
-      // Show the backend's message if there is one, otherwise the generic axios message
-      setError(err.response?.data?.message || err.message);
-      setConverted("");
+      setError({ title: "Conversion failed", message: err.response?.data?.message || err.message });
+      setConverted(null);
     } finally {
-      setConverting(false); // always turn the "Converting…" state off
+      setConverting(false); // always turn "Converting…" off, success or fail
     }
   };
 
-  // NEW: copy the converted code to the clipboard
+  // ---------- Action 3: Copy the converted code ----------
   const copyConverted = async () => {
     try {
-      await navigator.clipboard.writeText(converted);
+      await navigator.clipboard.writeText(converted.code);
       alert("Copied!");
-    } catch (err) {
+    } catch {
       alert("Could not copy");
     }
   };
 
-  // Send the code to the backend
+  // ---------- Action 4: Save the component to the backend ----------
   const saveComponent = async () => {
     setSaving(true);
     try {
-      // The login page saved the user in localStorage, so read it back here
       const user = JSON.parse(localStorage.getItem("user") || "null");
-      const userId = user?._id || user?.id; // the id MongoDB gave this user
+      const userId = user?._id || user?.id;
       if (!userId) {
         alert("Please log in first");
-        return; // stop here (the finally block below still turns "Saving…" off)
+        return;
       }
 
-      // Send the user's id together with the code, because the backend requires it
-      const res = await axios.post(`${API_URL}/component/add`, { code, user: userId });
-      console.log("Component saved:", res.data);
+      await axios.post(`${API_URL}/component/add`, { code, user: userId });
       alert("Component saved successfully!");
     } catch (err) {
       console.log(err);
@@ -198,90 +205,139 @@ export default function JSXRenderer() {
     }
   };
 
-  // Header status: [text, dot color]
-  const [statusText, statusColor] = error
-    ? ["Error", C.error]
-    : converting
-    ? ["Converting…", C.inkTextDim]
-    : converted
-    ? ["Converted", C.teal]
-    : Component
-    ? ["Rendered", C.teal]
-    : ["Not run yet", C.inkTextDim];
+  // ---------- Status text + dot color shown at the top right ----------
+  let statusText = "Not run yet";
+  let statusColor = THEME.dot;
+  if (error) { statusText = "Error"; statusColor = "bg-[#e8836b]"; }
+  else if (converting) { statusText = "Converting…"; }
+  else if (converted) { statusText = "Converted"; statusColor = "bg-emerald-500"; }
+  else if (Component) { statusText = "Rendered"; statusColor = "bg-emerald-500"; }
 
-  return (
-    <div className="jsx-page" style={s.page}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
-        * { box-sizing: border-box; }
-        html, body { margin: 0; background: #1e1e1e; }
-        .jsx-editor .monaco-editor, .jsx-editor .overflow-guard { border-radius: 0 !important; }
-        @keyframes stamp-in { from { opacity: 0; transform: scale(0.9) rotate(-2deg); } to { opacity: 1; transform: scale(1) rotate(-2deg); } }
-
-        /* Tablets and phones: page scrolls, panes stack, header becomes two rows */
-        @media (max-width: 900px) {
-          .jsx-page { height: auto !important; min-height: 100dvh; overflow: auto !important; }
-          .jsx-header { grid-template-columns: 1fr auto !important; padding: 12px 16px !important; row-gap: 10px; }
-          .jsx-brand { grid-column: 1; grid-row: 1; }
-          .jsx-status { grid-column: 2; grid-row: 1; }
-          .jsx-lang { grid-column: 1 / -1; grid-row: 2; }
-          .jsx-body { grid-template-columns: 1fr !important; }
-          .jsx-spine { height: 1px; background: #3c3c3c !important; }
-          .jsx-editor { flex: none !important; height: 55vh !important; min-height: 280px; }
-          .jsx-preview { min-height: 300px; padding: 16px !important; }
-        }
-        @media (max-width: 480px) { .jsx-lang { gap: 8px !important; } }
-      `}</style>
-
-      {/* HEADER: logo | FROM ⇄ TO | status */}
-      <header className="jsx-header" style={s.header}>
-        <div className="jsx-brand" style={s.brand}>
-          <span style={s.brandMark}>{"</>"}</span>
-          <span style={s.brandName}>JSX Studio</span>
+  // ---------- What to show in the right (RESULT) panel ----------
+  // Checked from top to bottom: the first one that is true wins.
+  const renderResult = () => {
+    // 1) An error happened (dark red card)
+    if (error) {
+      return (
+        <div className="rounded-lg border border-[#b3462f] bg-[#3a2622] p-4">
+          <div className="mb-2 text-xs font-semibold text-[#e8836b]">{error.title}</div>
+          <pre className="whitespace-pre-wrap text-sm text-[#f0b8a8]">{error.message}</pre>
         </div>
+      );
+    }
 
-        <div className="jsx-lang" style={s.langBar}>
-          <LangSelect label="FROM" value={fromLang} onChange={setFromLang} />
+    // 2) Code was converted: show it in a read-only editor
+    if (converted) {
+      const langName = LANGUAGES.find(([id]) => id === converted.lang)?.[1] || converted.lang;
+      return (
+        <>
+          <div className="mb-2 flex items-center justify-between">
+            <span className={`text-xs tracking-widest ${THEME.label}`}>
+              CONVERTED TO {langName.toUpperCase()}
+            </span>
+            <button
+              onClick={copyConverted}
+              className="rounded-md border border-emerald-600 px-3 py-1 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-600/20"
+            >
+              Copy
+            </button>
+          </div>
+          <div className={`h-[calc(100%-40px)] min-h-[300px] overflow-hidden rounded-lg border ${THEME.border}`}>
+            <Editor
+              height="100%"
+              language={converted.lang}
+              theme={THEME.editor}
+              beforeMount={defineMyTheme}
+              value={converted.code}
+              options={{ ...EDITOR_OPTIONS, readOnly: true }}
+            />
+          </div>
+        </>
+      );
+    }
+
+    // 3) JSX was run: show the live component.
+    // The white card keeps the user's component looking right on a dark page.
+    if (Component) {
+      return (
+        <div className="rounded-lg bg-white p-6">
+          <Component />
+        </div>
+      );
+    }
+
+    // 4) Nothing yet: show a hint
+    return (
+      <div className="flex h-full items-center justify-center text-center">
+        <p className="max-w-xs text-sm leading-relaxed text-gray-400">
+          Nothing here yet — write some code, then hit{" "}
+          <strong className="text-gray-200">Run JSX</strong> to preview it or{" "}
+          <strong className="text-gray-200">Convert</strong> to change its language.
+        </p>
+      </div>
+    );
+  };
+
+  /* ============================================================
+     4. THE LAYOUT (what you see on screen)
+     ============================================================ */
+  return (
+    // pt-20 leaves room for the fixed navbar.
+    <div className={`flex min-h-dvh flex-col pt-20 md:h-dvh md:overflow-hidden ${THEME.page}`}>
+
+      {/* TOP BAR: FROM ⇄ TO on the left, status on the right */}
+      <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 ${THEME.border}`}>
+        <div className="flex flex-wrap items-center gap-3">
+          <LanguageSelect label="FROM" value={fromLang} onChange={setFromLang} />
+
+          {/* Swap button: switches the FROM and TO languages */}
           <button
-            onClick={() => { setFromLang(toLang); setToLang(fromLang); }} // swap the two languages
-            style={s.swap}
+            onClick={() => { setFromLang(toLang); setToLang(fromLang); }}
             title="Swap languages"
+            className={`rounded-md border px-2.5 py-1 text-emerald-400 transition hover:bg-white/10 ${THEME.border}`}
           >
             ⇄
           </button>
-          <LangSelect label="TO" value={toLang} onChange={setToLang} />
+
+          <LanguageSelect label="TO" value={toLang} onChange={setToLang} />
         </div>
 
-        <div className="jsx-status" style={s.status}>
-          <span style={{ ...s.dot, background: statusColor }} />
-          <span style={s.mono12}>{statusText}</span>
+        <div className={`flex items-center gap-2 text-xs ${THEME.label}`}>
+          <span className={`h-2 w-2 rounded-full ${statusColor}`} />
+          {statusText}
         </div>
-      </header>
+      </div>
 
-      <div className="jsx-body" style={s.body}>
-        {/* LEFT: editor + buttons */}
-        <section style={s.inkPane}>
-          <div style={{ ...s.label, padding: "10px 20px" }}>WRITE</div>
+      {/* BODY: two columns on desktop, stacked on phones */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-2">
 
-          <div className="jsx-editor" style={s.editorWrap}>
+        {/* LEFT: the code editor + buttons */}
+        <section className={`flex min-h-0 flex-col border-b md:border-b-0 md:border-r ${THEME.border}`}>
+          <div className={`px-5 py-2.5 text-xs tracking-widest ${THEME.label}`}>WRITE</div>
+
+          <div className={`h-[55vh] min-h-[280px] border-y md:h-auto md:flex-1 ${THEME.border}`}>
             <Editor
               height="100%"
               language={fromLang}
-              theme="vs-dark"
+              theme={THEME.editor}
+              beforeMount={defineMyTheme}
               value={code}
               onChange={(value) => setCode(value || "")}
-              options={{ minimap: { enabled: false }, fontSize: 14, fontFamily: mono, automaticLayout: true, padding: { top: 16 } }}
+              options={EDITOR_OPTIONS}
             />
           </div>
 
-          <div style={s.toolbar}>
-            <button onClick={renderCode} style={s.run}>▸ Run JSX</button>
-
-            {/* NEW: Convert button, disabled while the request is running */}
+          <div className={`flex flex-wrap gap-2.5 px-5 py-3.5 ${THEME.bar}`}>
+            <button
+              onClick={renderCode}
+              className={`${BUTTON} border border-emerald-600 text-emerald-400 hover:bg-emerald-600/20`}
+            >
+              ▶ Run JSX
+            </button>
             <button
               onClick={convertCode}
               disabled={converting}
-              style={{ ...s.convert, opacity: converting ? 0.6 : 1, cursor: converting ? "default" : "pointer" }}
+              className={`${BUTTON} border border-emerald-600 text-emerald-400 hover:bg-emerald-600/20`}
             >
               {converting ? "Converting…" : "⇄ Convert"}
             </button>
@@ -289,55 +345,18 @@ export default function JSXRenderer() {
             <button
               onClick={saveComponent}
               disabled={saving}
-              style={{ ...s.save, opacity: saving ? 0.6 : 1, cursor: saving ? "default" : "pointer" }}
+              className={`${BUTTON} border hover:bg-white/10 ${THEME.border} ${THEME.buttonText}`}
             >
               {saving ? "Saving…" : "Save Component"}
             </button>
           </div>
         </section>
 
-        <div className="jsx-spine" style={s.spine} />
-
-        {/* RIGHT: result (error, converted code, rendered component, or empty message) */}
-        <section style={s.paperPane}>
-          <div style={{ ...s.label, padding: "10px 20px", color: C.paperTextDim }}>RESULT</div>
-
-          <div className="jsx-preview" style={s.preview}>
-            {error ? (
-              <div style={s.errCard}>
-                <div style={s.errTitle}>{errorTitle}</div>
-                <pre style={s.errBody}>{error}</pre>
-              </div>
-            ) : converted ? (
-              // NEW: converted code shown in a read-only editor
-              <>
-                <div style={s.convHead}>
-                  <span style={{ ...s.label, color: C.paperTextDim }}>
-                    CONVERTED TO {(LANGUAGES.find(([id]) => id === convertedLang)?.[1] || convertedLang).toUpperCase()}
-                  </span>
-                  <button onClick={copyConverted} style={s.copy}>Copy</button>
-                </div>
-                <div style={s.convEditor}>
-                  <Editor
-                    height="100%"
-                    language={convertedLang}
-                    theme="vs-dark"
-                    value={converted}
-                    options={{ readOnly: true, minimap: { enabled: false }, fontSize: 14, fontFamily: mono, automaticLayout: true, padding: { top: 16 } }}
-                  />
-                </div>
-              </>
-            ) : Component ? (
-              <div style={{ animation: "stamp-in 0.25s ease-out" }}>
-                <Component />
-              </div>
-            ) : (
-              <div style={s.empty}>
-                <p style={s.emptyText}>
-                  Nothing here yet — write some code, then hit <strong>Run JSX</strong> to preview it or <strong>Convert</strong> to change its language.
-                </p>
-              </div>
-            )}
+        {/* RIGHT: the result */}
+        <section className={`flex min-h-0 flex-col ${THEME.result}`}>
+          <div className={`px-5 py-2.5 text-xs tracking-widest ${THEME.label}`}>RESULT</div>
+          <div className="min-h-[300px] flex-1 overflow-auto p-4 md:p-7">
+            {renderResult()}
           </div>
         </section>
       </div>

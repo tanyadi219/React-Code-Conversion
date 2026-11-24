@@ -1,156 +1,145 @@
-'use client' // Next.js: required because this file uses useState (must be the very first line)
+import React from 'react'
 
-import React, { useState } from 'react'
-
-// Text data kept in arrays so it's easy to edit later
-const LANGUAGES = ['Python', 'JavaScript', 'Java', 'C++', 'PHP', 'TypeScript']
-
-const FEATURES = [
-  { icon: '⚡', title: 'Instant conversion', text: 'Paste your code and get the result in seconds.' },
-  { icon: '🧠', title: 'AI powered', text: "Understands your code's logic, not just the syntax." },
-  { icon: '🌐', title: 'Many languages', text: 'Convert between the most popular languages.' },
-  { icon: '🔒', title: 'Private', text: 'Your code is never stored or shared.' },
-]
-
-const STEPS = [
-  { number: '1', title: 'Paste your code', text: 'Add the code you want to convert.' },
-  { number: '2', title: 'Pick languages', text: 'Choose the source and target language.' },
-  { number: '3', title: 'Copy the result', text: 'Click convert, then copy your new code.' },
-]
-
-const Home = () => {
-  // useState stores values that can change; React re-draws the page when they do
-  const [from, setFrom] = useState('Python')
-  const [to, setTo] = useState('JavaScript')
-  const [input, setInput] = useState('print("Hello, world!")')
-  const [output, setOutput] = useState('')
-
-  // Runs when "Convert code" is clicked.
-  // NOTE: placeholder only! Replace with a real API call to your converter.
-  const handleConvert = () => {
-    setOutput(`// ${from} -> ${to} (demo output)\n// Connect your real converter here.\n\n${input}`)
-  }
-
-  // Swap the two language dropdowns
-  const handleSwap = () => {
-    setFrom(to)
-    setTo(from)
-  }
-
-  // Copy the result to the clipboard
-  const handleCopy = () => {
-    navigator.clipboard.writeText(output)
-  }
-
+const home = () => {
   return (
-    <div>
-      {/* ---------- NAVBAR ---------- */}
-      <header className="navbar">
-        <a href="/" className="logo">{'</>'} CodeShift</a>
-        <nav className="nav-links">
-          <a href="#features">Features</a>
-          <a href="#how-it-works">How it works</a>
-          <a href="#converter" className="btn btn-small">Try it free</a>
-        </nav>
-      </header>
+    <>
+      {/* The keyframes live inside the component, so the CSS and markup stay together.
+          Template literal (backticks) lets us write multi-line CSS inside JSX. */}
+      <style>{`
+        @keyframes hs-hero-day-night {
+          0%, 18% { opacity: 0; }
+          42%, 62% { opacity: 1; }
+          86%, 100% { opacity: 0; }
+        }
+      `}</style>
 
-      <main>
-        {/* ---------- HERO + LIVE DEMO ---------- */}
-        <section className="hero">
-          <h1>
-            Convert code between <span className="highlight">any language</span>
-          </h1>
-          <p className="hero-subtitle">
-            Paste your code, pick a language, and get clean, working code back in seconds.
-          </p>
+      {/* Hero */}
+      <div className="relative overflow-hidden">
+        {/* Background layers (decorative, so hidden from screen readers) */}
+        <div
+          className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          {/* Day image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: "url('https://i.pinimg.com/1200x/67/a1/37/67a13709a9ddbf259c5c3d166d64f23a.jpg')" }}
+          ></div>
 
-          <div className="converter" id="converter">
-            {/* Language pickers */}
-            <div className="converter-toolbar">
-              <select value={from} onChange={(e) => setFrom(e.target.value)}>
-                {LANGUAGES.map((lang) => (
-                  <option key={lang}>{lang}</option>
-                ))}
-              </select>
+          {/* Night image: fades in and out using the keyframes above */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-0 motion-reduce:animate-none animate-[hs-hero-day-night_10s_ease-in-out_infinite]"
+            style={{ backgroundImage: "url('https://i.pinimg.com/736x/57/9b/7d/579b7d54e7e462bf1c162bcc54e08708.jpg')" }}
+          ></div>
 
-              <button className="swap-btn" onClick={handleSwap} aria-label="Swap languages">⇄</button>
+          {/* Dark overlay so the white text is easier to read */}
+          <div className="absolute inset-0 bg-gray-800/10"></div>
+        </div>
 
-              <select value={to} onChange={(e) => setTo(e.target.value)}>
-                {LANGUAGES.map((lang) => (
-                  <option key={lang}>{lang}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Input and output boxes side by side */}
-            <div className="converter-panels">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Paste your code here..."
-                spellCheck="false"
-              />
-              <textarea
-                value={output}
-                readOnly
-                placeholder="Converted code appears here..."
-                spellCheck="false"
-              />
-            </div>
-
-            <div className="converter-actions">
-              <button className="btn" onClick={handleConvert}>Convert code</button>
-              {/* Only show the copy button once there is output */}
-              {output && (
-                <button className="btn btn-outline" onClick={handleCopy}>Copy result</button>
-              )}
-            </div>
+        {/* Content sits above the background (z-10) */}
+        <div className="relative z-10 max-w-340 mx-auto px-4 sm:px-6 lg:px-8 py-24 min-h-dvh flex flex-col justify-center space-y-8">
+          {/* Announcement Banner */}
+          <div className="flex justify-center">
+            <a
+              className="group inline-flex items-center bg-white/40 hover:bg-white/50 p-1 ps-4 rounded-full shadow-lg shadow-transparent backdrop-blur-xl focus:outline-hidden focus:bg-white/50"
+              href="/signup"
+            >
+              <p className="me-2 text-gray-800 text-sm">We Know what you want</p>
+              <span className="group-hover:bg-white/50 py-1.5 px-2.5 flex justify-center items-center gap-x-2 rounded-full bg-white/50 font-semibold text-gray-800 text-sm">
+                <svg
+                  className="shrink-0 size-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
+            </a>
           </div>
-        </section>
+          {/* End Announcement Banner */}
 
-        {/* ---------- FEATURES ---------- */}
-        <section className="section" id="features">
-          <h2>Why developers love CodeShift</h2>
-          <div className="grid">
-            {/* .map() makes one card for each item in FEATURES */}
-            {FEATURES.map((f) => (
-              <div className="card" key={f.title}>
-                <div className="card-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.text}</p>
-              </div>
-            ))}
+          {/* Title */}
+          <div className="max-w-3xl text-center mx-auto">
+            <h1 className="block font-semibold text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
+              Convert with ease.
+            </h1>
           </div>
-        </section>
 
-        {/* ---------- HOW IT WORKS ---------- */}
-        <section className="section section-alt" id="how-it-works">
-          <h2>How it works</h2>
-          <div className="grid">
-            {STEPS.map((s) => (
-              <div className="card" key={s.number}>
-                <div className="step-number">{s.number}</div>
-                <h3>{s.title}</h3>
-                <p>{s.text}</p>
-              </div>
-            ))}
+          <div className="max-w-3xl text-center mx-auto">
+            <p className="text-lg text-white/80">
+              Convert smarter with AI that understands you. So you can take a breath.
+            </p>
           </div>
-        </section>
 
-        {/* ---------- CALL TO ACTION ---------- */}
-        <section className="cta">
-          <h2>Ready to convert your code?</h2>
-          <p>No sign-up needed. Just paste and go.</p>
-          <a href="#converter" className="btn btn-light">Start converting</a>
-        </section>
-      </main>
+          {/* Buttons */}
+          <div className="text-center">
+  <div className="inline-flex flex-wrap justify-center items-center gap-3">
+    {/* Get Started button */}
+    {/* transition-all duration-300 = animate every change over 0.3 seconds
+        hover:scale-105 = grow to 105% size on hover
+        hover:-translate-y-1 = move up a little on hover
+        hover:shadow-xl = bigger shadow, so it looks like it's floating
+        active:scale-95 = shrink slightly while clicking, like a real button press
+        hover:bg-gray-100 = fixed, gray-20 doesn't exist in Tailwind */}
+    <a
+      className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-full bg-white border border-gray-200 text-gray-800 shadow-2xs transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-xl hover:bg-gray-100 active:scale-95 focus:outline-hidden focus:bg-gray-100"
+      href="/Convertor"
+    >
+      Get Started
+      <svg
+        className="shrink-0 size-4"
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </a>
 
-      {/* ---------- FOOTER ---------- */}
-      <footer className="footer">
-        <p>© {new Date().getFullYear()} CodeShift. All rights reserved.</p>
-      </footer>
-    </div>
+    {/* Login button */}
+    {/* Same pop-up effect. hover:bg-white/10 gives a faint glass background on hover
+        (fixed, "plain" isn't a Tailwind color, so it did nothing before) */}
+    <a
+      className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-full border border-transparent text-white transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-xl hover:bg-white/10 active:scale-95 focus:outline-hidden focus:bg-white/10"
+      href="/login"
+    >
+      <svg
+        className="shrink-0 size-4"
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polygon points="5 3 19 12 5 21 5 3" />
+      </svg>
+      Login
+    </a>
+  </div>
+</div>
+          {/* End Buttons */}
+        </div>
+      </div>
+      {/* End Hero */}
+    </>
   )
 }
 
-export default Home;
+export default home;

@@ -8,14 +8,14 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 // Models to try, in order. If the first is overloaded, we move to the next.
 // Set GEMINI_MODEL in .env to change the first choice.
 const MODELS = [
-  process.env.GEMINI_MODEL || "gemini-3.5-flash",
-  "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
+  "gemini-3.5-flash",  // primary model
+  "gemini-3.8-flash",  // fallback (replaces the retired gemini-2.5-flash)
 ];
+
 
 const SUPPORTED_LANGUAGES = [
   "javascript", "typescript", "python", "java", "c", "c++",
-  "c#", "go", "php", "ruby", "rust", "kotlin", "swift",
+  "c#", "go", "php", "ruby",
 ];
 
 const MAX_CODE_LENGTH = 10000;
@@ -43,6 +43,13 @@ async function generateWithFallback(makeCall) {
         return await makeCall(model);
       } catch (err) {
         lastError = err;
+
+        // NEW: 404 means this model is gone or unavailable.
+        // Retrying won't help, so leave the inner loop and try the next model.
+        if (err.status === 404) {
+          console.log(`${model} not found (404), skipping to next model`);
+          break;
+        }
 
         // Not a temporary error, so retrying will not help
         if (!RETRYABLE_STATUS.includes(err.status)) throw err;
