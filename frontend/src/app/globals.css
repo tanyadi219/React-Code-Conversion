@@ -1,3 +1,7 @@
 /* Tailwind v4 only needs this one line to load its styles */
 @import "tailwindcss";
-/* ...the rest of your own CSS stays below... */
+
+@keyframes form-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

@@ -7,6 +7,7 @@ import * as Yup from 'yup';
 import { useRouter } from 'next/navigation';
 import { DotSpinner } from 'ldrs/react';
 import 'ldrs/react/DotSpinner.css';
+import DotWaves from '../components/DotWaves'; // the animated dotted background
 
 const SignupSchema = Yup.object().shape({
   name: Yup.string()
@@ -26,8 +27,9 @@ const SignupSchema = Yup.object().shape({
     .oneOf([Yup.ref('password')], 'Password must match'),
 });
 
+// Dark, see-through input style so the fields match the dark card
 const inputClass =
-  'border border-gray-200 py-2 px-4 block w-full bg-white rounded-lg text-sm text-gray-800 placeholder:text-gray-500 focus:outline-none focus:border-blue-700 focus:ring-1 focus:ring-blue-700 disabled:opacity-50 disabled:pointer-events-none';
+  'border border-white/20 py-2 px-4 block w-full bg-white/10 rounded-lg text-sm text-white placeholder:text-gray-400 focus:outline-none focus:border-white focus:ring-1 focus:ring-white disabled:opacity-50 disabled:pointer-events-none';
 
 const Signup = () => {
   const router = useRouter();
@@ -46,6 +48,7 @@ const Signup = () => {
         .then((result) => {
           resetForm();
           toast.success('User registered successfully');
+          // After signup, send the user to the login page (no token is saved here)
           setTimeout(() => router.push('/login'), 1000);
         })
         .catch((err) => {
@@ -58,15 +61,23 @@ const Signup = () => {
   });
 
   return (
-    <div className="bg-gray-100 min-h-screen flex items-center justify-center px-4 pt-20 pb-6">
-      <div className="w-full max-w-lg bg-white border border-gray-200 rounded-xl shadow-sm">
+    // "relative" + "overflow-hidden" keep the animated dots inside this box
+    <div className="relative overflow-hidden bg-black min-h-screen flex items-center justify-center px-4 pt-20 pb-6">
+
+      {/* Animated dotted waves fill the whole background */}
+      <DotWaves />
+
+      {/* Card: "relative z-10" keeps it above the dots.
+          bg-black/50 + backdrop-blur gives a dark frosted-glass look,
+          and the card slides up when the page loads. */}
+        <div className="relative z-10 w-full max-w-lg bg-black/25 backdrop-blur-[3px] border border-white/15 rounded-xl shadow-2xl motion-reduce:animate-none animate-[form-fade-up_0.6s_ease-out_both]">
         <div className="p-5 sm:p-6">
           <div className="text-center">
-            <h3 className="block text-2xl font-bold text-gray-800">Sign up</h3>
-            <p className="mt-2 text-sm text-gray-600">
+            <h3 className="block text-2xl font-bold text-white">Sign up</h3>
+            <p className="mt-2 text-sm text-gray-300">
               Already have an account?{' '}
               <a
-                className="text-blue-600 decoration-2 hover:underline focus:outline-none focus:underline font-medium"
+                className="text-white underline decoration-2 hover:text-gray-300 focus:outline-none font-medium"
                 href="/login"
               >
                 Login here
@@ -76,7 +87,7 @@ const Signup = () => {
 
           <div className="mt-4">
             <a
-              className="w-full py-2.5 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg bg-white border border-gray-200 text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-gray-50"
+              className="w-full py-2.5 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg bg-white/10 border border-white/20 text-white shadow-sm hover:bg-white/20 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:bg-white/20"
               href="#"
             >
               <svg className="w-4 h-auto" width="46" height="47" viewBox="0 0 46 47" fill="none">
@@ -88,7 +99,7 @@ const Signup = () => {
               Sign up with Google
             </a>
 
-            <div className="py-2 flex items-center text-xs text-gray-400 uppercase before:flex-1 before:border-t before:border-gray-200 before:me-6 after:flex-1 after:border-t after:border-gray-200 after:ms-6">
+            <div className="py-2 flex items-center text-xs text-gray-400 uppercase before:flex-1 before:border-t before:border-white/20 before:me-6 after:flex-1 after:border-t after:border-white/20 after:ms-6">
               Or
             </div>
           </div>
@@ -96,7 +107,7 @@ const Signup = () => {
           <form onSubmit={signupForm.handleSubmit}>
             <div className="grid gap-y-3">
               <div>
-                <label htmlFor="name" className="block text-sm mb-1 text-gray-800">
+                <label htmlFor="name" className="block text-sm mb-1 text-gray-200">
                   Full Name
                 </label>
                 <input
@@ -110,14 +121,14 @@ const Signup = () => {
                   aria-describedby="name-error"
                 />
                 {signupForm.errors.name && signupForm.touched.name && (
-                  <p className="text-xs text-red-600 mt-1" id="name-error">
+                  <p className="text-xs text-red-300 mt-1" id="name-error">
                     {signupForm.errors.name}
                   </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-sm mb-1 text-gray-800">
+                <label htmlFor="email" className="block text-sm mb-1 text-gray-200">
                   Email address
                 </label>
                 <input
@@ -131,7 +142,7 @@ const Signup = () => {
                   aria-describedby="email-error"
                 />
                 {signupForm.errors.email && signupForm.touched.email && (
-                  <p className="text-xs text-red-600 mt-1" id="email-error">
+                  <p className="text-xs text-red-300 mt-1" id="email-error">
                     {signupForm.errors.email}
                   </p>
                 )}
@@ -139,7 +150,7 @@ const Signup = () => {
 
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="password" className="block text-sm mb-1 text-gray-800">
+                  <label htmlFor="password" className="block text-sm mb-1 text-gray-200">
                     Password
                   </label>
                   <input
@@ -153,14 +164,14 @@ const Signup = () => {
                     aria-describedby="password-error"
                   />
                   {signupForm.errors.password && signupForm.touched.password && (
-                    <p className="text-xs text-red-600 mt-1" id="password-error">
+                    <p className="text-xs text-red-300 mt-1" id="password-error">
                       {signupForm.errors.password}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm mb-1 text-gray-800">
+                  <label htmlFor="confirmPassword" className="block text-sm mb-1 text-gray-200">
                     Confirm Password
                   </label>
                   <input
@@ -174,7 +185,7 @@ const Signup = () => {
                     aria-describedby="confirmPassword-error"
                   />
                   {signupForm.errors.confirmPassword && signupForm.touched.confirmPassword && (
-                    <p className="text-xs text-red-600 mt-1" id="confirmPassword-error">
+                    <p className="text-xs text-red-300 mt-1" id="confirmPassword-error">
                       {signupForm.errors.confirmPassword}
                     </p>
                   )}
@@ -186,12 +197,12 @@ const Signup = () => {
                   id="checkbox"
                   name="checkbox"
                   type="checkbox"
-                  className="shrink-0 size-4 border border-gray-300 rounded-sm text-blue-600 focus:ring-0 focus:ring-offset-0"
+                  className="shrink-0 size-4 border border-white/30 bg-white/10 rounded-sm text-white focus:ring-0 focus:ring-offset-0"
                 />
-                <label htmlFor="checkbox" className="ms-3 text-sm text-gray-800">
+                <label htmlFor="checkbox" className="ms-3 text-sm text-gray-200">
                   I accept the{' '}
                   <a
-                    className="text-blue-600 decoration-2 hover:underline focus:outline-none focus:underline font-medium"
+                    className="text-white underline decoration-2 hover:text-gray-300 focus:outline-none font-medium"
                     href="#"
                   >
                     Terms and Conditions
@@ -199,13 +210,15 @@ const Signup = () => {
                 </label>
               </div>
 
+              {/* White button with a small lift on hover and a squeeze when pressed.
+                  The spinner color is black because the button is white. */}
               <button
                 disabled={signupForm.isSubmitting}
                 type="submit"
-                className="w-full py-2.5 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg bg-blue-600 border border-transparent text-white hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full py-2.5 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg bg-white border border-transparent text-black hover:bg-gray-200 focus:outline-none focus:bg-gray-200 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transition-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
               >
                 {signupForm.isSubmitting ? (
-                  <DotSpinner size="30" speed="0.9" color="white" />
+                  <DotSpinner size="30" speed="0.9" color="black" />
                 ) : (
                   'Sign Up'
                 )}

@@ -21,10 +21,11 @@ const Navbar = () => {
           </a>
 
           {/* Button is also see-through now (white/10) so it matches the glass look */}
-          <a href="/"
-              className="ml-auto inline-flex items-center bg-white/10 border-0 py-1 px-3 focus:outline-none hover:bg-white/20 rounded text-base mt-4 md:mt-0"
+         <a
+            href="/"
+            className="ml-auto inline-flex items-center text-white bg-white/10 border-0 py-1 px-3 focus:outline-none hover:bg-white/20 rounded text-base mt-4 md:mt-0"
           >
-              Home
+            Home
             <svg
               fill="none"
               stroke="currentColor"

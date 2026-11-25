@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import * as Yup from 'yup';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import DotWaves from '../components/DotWaves'; // the animated dotted background
 
+// Backend URL: uses the env variable if set, otherwise your local server
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5500";
 
 const LoginSchema = Yup.object().shape({
@@ -36,7 +38,9 @@ const Login = () => {
           localStorage.setItem("token", token);
           if (user) localStorage.setItem("user", JSON.stringify(user));
 
-          router.push("/"); // change to wherever you want to land after login
+          // Redirect to the Convertor page after a successful login.
+          // replace() removes the login page from history, so Back won't return here.
+          router.replace("/Convertor");
         } catch (err) {
           console.log(err);
           if (err.response?.status === 403) {
@@ -52,102 +56,109 @@ const Login = () => {
     });
 
     return (
-      <div className="bg-gray-100 min-h-screen flex items-center justify-center px-4 pt-24 pb-10">
-      {/* Card: w-full on phones, but never wider than max-w-lg (32rem) */}
-      <div className="w-full max-w-lg bg-white border border-gray-200 rounded-xl shadow-2xs">
-        <div className="p-4 sm:p-7">
-          {/* Heading */}
-          <div className="text-center">
-            <h3 className="block text-2xl font-bold text-gray-800">Login</h3>
-            <p className="mt-2 text-sm text-gray-600">
-              Don't have an account yet?{" "}
-              {/* {" "} adds a space, because JSX ignores spaces at line breaks */}
-              <a
-                className="text-blue-600 decoration-2 hover:underline focus:outline-hidden focus:underline font-medium"
-                href="/signup"
-              >
-                Sign up here
-              </a>
-            </p>
-          </div>
+      // "relative" + "overflow-hidden" keep the animated dots inside this box
+      <div className="relative overflow-hidden bg-black min-h-screen flex items-center justify-center px-4 pt-24 pb-10">
 
-          {/* Form */}
-          <form onSubmit={loginForm.handleSubmit} className="mt-5">
-            <div className="grid gap-y-4">
-              {/* Error message from the server (only shows when authError has a value) */}
-              {authError && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2 text-center">
-                  {authError}
-                </p>
-              )}
+        {/* Animated dotted waves fill the whole background */}
+        <DotWaves />
 
-              {/* Email field */}
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm mb-2 text-gray-800"
+        {/* Card: "relative z-10" keeps it above the dots.
+            bg-black/50 + backdrop-blur gives a dark frosted-glass look.
+            w-full on phones, but never wider than max-w-lg (32rem) */}
+          <div className="relative z-10 w-full max-w-lg bg-black/25 backdrop-blur-[3px] border border-white/15 rounded-xl shadow-2xl motion-reduce:animate-none animate-[form-fade-up_0.6s_ease-out_both]">
+          <div className="p-4 sm:p-7">
+            {/* Heading */}
+            <div className="text-center">
+              <h3 className="block text-2xl font-bold text-white">Login</h3>
+              <p className="mt-2 text-sm text-gray-300">
+                Don't have an account yet?{" "}
+                {/* {" "} adds a space, because JSX ignores spaces at line breaks */}
+                <a
+                  className="text-white underline decoration-2 hover:text-gray-300 focus:outline-hidden font-medium"
+                  href="/signup"
                 >
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  onChange={loginForm.handleChange}
-                  onBlur={loginForm.handleBlur}
-                  value={loginForm.values.email}
-                  // "border" was added so the input outline is visible
-                  className="py-2.5 sm:py-3 px-4 block w-full bg-white border border-gray-200 rounded-lg sm:text-sm text-gray-800 placeholder:text-gray-500 focus:border-blue-700 focus:ring-blue-700 disabled:opacity-50 disabled:pointer-events-none"
-                  required
-                />
-                {/* Validation error (shows only after the user has touched the field) */}
-                {loginForm.errors.email && loginForm.touched.email && (
-                  <p className="text-xs text-red-600 mt-2">
-                    {loginForm.errors.email}
-                  </p>
-                )}
-              </div>
-
-              {/* Password field */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm mb-2 text-gray-800"
-                >
-                  Password
-                </label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  onChange={loginForm.handleChange}
-                  onBlur={loginForm.handleBlur}
-                  value={loginForm.values.password}
-                  className="py-2.5 sm:py-3 px-4 block w-full bg-white border border-gray-200 rounded-lg sm:text-sm text-gray-800 placeholder:text-gray-500 focus:border-blue-700 focus:ring-blue-700 disabled:opacity-50 disabled:pointer-events-none"
-                  required
-                />
-                {loginForm.errors.password && loginForm.touched.password && (
-                  <p className="text-xs text-red-600 mt-2">
-                    {loginForm.errors.password}
-                  </p>
-                )}
-              </div>
-
-              {/* Submit button (disabled while the form is submitting) */}
-              <button
-                type="submit"
-                disabled={loginForm.isSubmitting}
-                className="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg bg-blue-600 border border-transparent text-white hover:bg-blue-700 focus:outline-hidden focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
-              >
-                {loginForm.isSubmitting ? "Logging in..." : "Login"}
-              </button>
+                  Sign up here
+                </a>
+              </p>
             </div>
-          </form>
-          {/* End Form */}
+
+            {/* Form */}
+            <form onSubmit={loginForm.handleSubmit} className="mt-5">
+              <div className="grid gap-y-4">
+                {/* Error message from the server (only shows when authError has a value) */}
+                {authError && (
+                  <p className="text-sm text-red-300 bg-red-500/10 border border-red-400/40 rounded-lg p-2 text-center">
+                    {authError}
+                  </p>
+                )}
+
+                {/* Email field */}
+                <div>
+                  <label
+                    htmlFor="email"
+                    className="block text-sm mb-2 text-gray-200"
+                  >
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    onChange={loginForm.handleChange}
+                    onBlur={loginForm.handleBlur}
+                    value={loginForm.values.email}
+                    className="py-2.5 sm:py-3 px-4 block w-full bg-white/10 border border-white/20 rounded-lg sm:text-sm text-white placeholder:text-gray-400 focus:border-white focus:ring-white disabled:opacity-50 disabled:pointer-events-none"
+                    required
+                  />
+                  {/* Validation error (shows only after the user has touched the field) */}
+                  {loginForm.errors.email && loginForm.touched.email && (
+                    <p className="text-xs text-red-300 mt-2">
+                      {loginForm.errors.email}
+                    </p>
+                  )}
+                </div>
+
+                {/* Password field */}
+                <div>
+                  <label
+                    htmlFor="password"
+                    className="block text-sm mb-2 text-gray-200"
+                  >
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    onChange={loginForm.handleChange}
+                    onBlur={loginForm.handleBlur}
+                    value={loginForm.values.password}
+                    className="py-2.5 sm:py-3 px-4 block w-full bg-white/10 border border-white/20 rounded-lg sm:text-sm text-white placeholder:text-gray-400 focus:border-white focus:ring-white disabled:opacity-50 disabled:pointer-events-none"
+                    required
+                  />
+                  {loginForm.errors.password && loginForm.touched.password && (
+                    <p className="text-xs text-red-300 mt-2">
+                      {loginForm.errors.password}
+                    </p>
+                  )}
+                </div>
+
+                {/* Submit button (disabled while the form is submitting).
+                    The hover/press classes give it a small lift and squeeze effect. */}
+                <button
+                  type="submit"
+                  disabled={loginForm.isSubmitting}
+                  className="w-full py-3 px-4 inline-flex justify-center items-center gap-x-2 text-sm font-medium rounded-lg bg-white border border-transparent text-black hover:bg-gray-200 focus:outline-hidden focus:bg-gray-200 disabled:opacity-50 disabled:pointer-events-none motion-reduce:transition-none transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
+                >
+                  {loginForm.isSubmitting ? "Logging in..." : "Login"}
+                </button>
+              </div>
+            </form>
+            {/* End Form */}
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
 }
 
 export default Login;
